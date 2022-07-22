@@ -1,0 +1,64 @@
+/*
+Copyright 2022 The KubeSphere Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package alpha
+
+import (
+	"github.com/kubesphere/kubekey/cmd/ctl/options"
+	"github.com/kubesphere/kubekey/cmd/ctl/util"
+	"github.com/kubesphere/kubekey/pkg/alpha"
+	"github.com/kubesphere/kubekey/pkg/common"
+	"github.com/spf13/cobra"
+)
+
+type ArtifactImportOptions struct {
+	CommonOptions *options.CommonOptions
+	Artifact      string
+}
+
+func NewUpgradePrecheckOptions() *ArtifactImportOptions {
+	return &ArtifactImportOptions{
+		CommonOptions: options.NewCommonOptions(),
+	}
+}
+
+// NewCmdArtifactImport creates a new artifact import command
+func NewCmdArtifactImport() *cobra.Command {
+	o := NewUpgradePrecheckOptions()
+	cmd := &cobra.Command{
+		Use:   "import",
+		Short: "Import a KubeKey offline installation package",
+		Run: func(cmd *cobra.Command, args []string) {
+			util.CheckErr(o.Run())
+		},
+	}
+
+	o.CommonOptions.AddCommonFlag(cmd)
+	o.AddFlags(cmd)
+	return cmd
+}
+
+func (o *ArtifactImportOptions) Run() error {
+	arg := common.Argument{
+		Debug:    o.CommonOptions.Verbose,
+		Artifact: o.Artifact,
+	}
+	return alpha.ArtifactImport(arg)
+}
+
+func (o *ArtifactImportOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Artifact, "gzip", "g", "", "Path to a artifact gzip")
+}
