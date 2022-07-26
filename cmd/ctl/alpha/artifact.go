@@ -17,6 +17,8 @@ limitations under the License.
 package alpha
 
 import (
+	"errors"
+
 	"github.com/kubesphere/kubekey/cmd/ctl/options"
 	"github.com/kubesphere/kubekey/cmd/ctl/util"
 	"github.com/kubesphere/kubekey/pkg/alpha"
@@ -29,7 +31,7 @@ type ArtifactImportOptions struct {
 	Artifact      string
 }
 
-func NewUpgradePrecheckOptions() *ArtifactImportOptions {
+func NewArtifactImportOptions() *ArtifactImportOptions {
 	return &ArtifactImportOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
@@ -37,11 +39,12 @@ func NewUpgradePrecheckOptions() *ArtifactImportOptions {
 
 // NewCmdArtifactImport creates a new artifact import command
 func NewCmdArtifactImport() *cobra.Command {
-	o := NewUpgradePrecheckOptions()
+	o := NewArtifactImportOptions()
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import a KubeKey offline installation package",
 		Run: func(cmd *cobra.Command, args []string) {
+			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())
 		},
 	}
@@ -60,5 +63,12 @@ func (o *ArtifactImportOptions) Run() error {
 }
 
 func (o *ArtifactImportOptions) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&o.Artifact, "gzip", "g", "", "Path to a artifact gzip")
+	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a artifact gzip")
+}
+
+func (o *ArtifactImportOptions) Complete(_ *cobra.Command, _ []string) error {
+	if o.Artifact == "" {
+		return errors.New("artifact path can not be empty")
+	}
+	return nil
 }
