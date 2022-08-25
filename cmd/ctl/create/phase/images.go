@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package alpha
+package phase
 
 import (
 	"fmt"
@@ -26,50 +26,66 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type UpgradeImagesOptions struct {
-	CommonOptions  *options.CommonOptions
-	ClusterCfgFile string
-	Kubernetes     string
-	DownloadCmd    string
+type CreateImagesOptions struct {
+	CommonOptions    *options.CommonOptions
+	ClusterCfgFile   string
+	Artifact         string
+	Kubernetes       string
+	ContainerManager string
+	DownloadCmd      string
 }
 
-func NewUpgradeImagesOptions() *UpgradeImagesOptions {
-	return &UpgradeImagesOptions{
+func NewCreateImagesOptions() *CreateImagesOptions {
+	return &CreateImagesOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
 }
 
 // NewCmdUpgrade creates a new upgrade command
-func NewCmdUpgradeImages() *cobra.Command {
-	o := NewUpgradeImagesOptions()
+func NewCmdCreateImages() *cobra.Command {
+	o := NewCreateImagesOptions()
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "pull the images before upgrading your cluster",
+		Short: "down the container and pull the images before creating your cluster",
 		Run: func(cmd *cobra.Command, args []string) {
+			util.CheckErr(o.Validate(cmd, args))
 			util.CheckErr(o.Run())
 		},
 	}
 	o.CommonOptions.AddCommonFlag(cmd)
 	o.AddFlags(cmd)
 
-	if err := completionSetting(cmd); err != nil {
+	if err := k8sCompletionSetting(cmd); err != nil {
 		panic(fmt.Sprintf("Got error with the completion setting"))
 	}
 	return cmd
 }
 
-func (o *UpgradeImagesOptions) Run() error {
-	arg := common.Argument{
-		FilePath:          o.ClusterCfgFile,
-		KubernetesVersion: o.Kubernetes,
-		Debug:             o.CommonOptions.Verbose,
+func (o *CreateImagesOptions) Validate(_ *cobra.Command, _ []string) error {
+	switch o.ContainerManager {
+	case common.Docker, common.Conatinerd, common.Crio, common.Isula:
+	default:
+		return fmt.Errorf("unsupport container runtime [%s]", o.ContainerManager)
 	}
-	return images.UpgradeImages(arg, o.DownloadCmd)
+	return nil
 }
 
-func (o *UpgradeImagesOptions) AddFlags(cmd *cobra.Command) {
+func (o *CreateImagesOptions) Run() error {
+	arg := common.Argument{
+		FilePath:          o.ClusterCfgFile,
+		Artifact:          o.Artifact,
+		KubernetesVersion: o.Kubernetes,
+		ContainerManager:  o.ContainerManager,
+		Debug:             o.CommonOptions.Verbose,
+	}
+	return images.CreateImages(arg, o.DownloadCmd)
+}
+
+func (o *CreateImagesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
+	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a artifact gzip")
+	cmd.Flags().StringVarP(&o.ContainerManager, "container-manager", "", "docker", "Container runtime: docker, crio, containerd and isula.")
 	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 }

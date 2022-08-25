@@ -14,27 +14,33 @@
  limitations under the License.
 */
 
-package binary
+package images
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/kubesphere/kubekey/pkg/alpha/precheck"
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
 	"github.com/kubesphere/kubekey/pkg/common"
+	"github.com/kubesphere/kubekey/pkg/container"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
+	"github.com/kubesphere/kubekey/pkg/images"
+	"github.com/kubesphere/kubekey/pkg/kubernetes"
 )
 
-func NewUpgradeBinaryPipeline(runtime *common.KubeRuntime) error {
-
+func NewCreateImagesPipeline(runtime *common.KubeRuntime) error {
+	skipPushImages := runtime.Arg.Artifact == "" || runtime.Cluster.Registry.PrivateRegistry == ""
 	m := []module.Module{
-		&precheck.UprgadePreCheckModule{},
-		&UpgradeBinaryModule{},
+		&precheck.NodePreCheckModule{},
+		&kubernetes.StatusModule{},
+		&container.InstallContainerModule{},
+		&images.CopyImagesToRegistryModule{Skip: skipPushImages},
+		&images.PullModule{},
 	}
 
 	p := pipeline.Pipeline{
-		Name:    "UpgradeBinaryPipeline",
+		Name:    "CreateImagesPipeline",
 		Modules: m,
 		Runtime: runtime,
 	}
@@ -44,7 +50,7 @@ func NewUpgradeBinaryPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func UpgradeBinary(args common.Argument, downloadCmd string) error {
+func CreateImages(args common.Argument, downloadCmd string) error {
 	args.DownloadCommand = func(path, url string) string {
 		// this is an extension point for downloading tools, for example users can set the timeout, proxy or retry under
 		// some poor network environment. Or users even can choose another cli, it might be wget.
@@ -65,7 +71,7 @@ func UpgradeBinary(args common.Argument, downloadCmd string) error {
 	}
 	switch runtime.Cluster.Kubernetes.Type {
 	case common.Kubernetes:
-		if err := NewUpgradeBinaryPipeline(runtime); err != nil {
+		if err := NewCreateImagesPipeline(runtime); err != nil {
 			return err
 		}
 	default:

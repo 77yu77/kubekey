@@ -1,0 +1,104 @@
+/*
+ Copyright 2022 The KubeSphere Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package kubernetes
+
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+
+	"github.com/kubesphere/kubekey/pkg/addons"
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
+	"github.com/kubesphere/kubekey/pkg/certs"
+	"github.com/kubesphere/kubekey/pkg/common"
+	"github.com/kubesphere/kubekey/pkg/core/module"
+	"github.com/kubesphere/kubekey/pkg/core/pipeline"
+	"github.com/kubesphere/kubekey/pkg/filesystem"
+	"github.com/kubesphere/kubekey/pkg/kubernetes"
+	"github.com/kubesphere/kubekey/pkg/plugins"
+	"github.com/kubesphere/kubekey/pkg/plugins/dns"
+	"github.com/kubesphere/kubekey/pkg/plugins/network"
+	"github.com/kubesphere/kubekey/pkg/plugins/storage"
+)
+
+func NewCreateKubernetesPipeline(runtime *common.KubeRuntime) error {
+	skipLocalStorage := true
+	if runtime.Arg.DeployLocalStorage != nil {
+		skipLocalStorage = !*runtime.Arg.DeployLocalStorage
+	} else if runtime.Cluster.KubeSphere.Enabled {
+		skipLocalStorage = false
+	}
+	m := []module.Module{
+		&precheck.NodePreCheckModule{},
+		&kubernetes.StatusModule{},
+		&InstallKubeletModule{},
+		&kubernetes.InitKubernetesModule{},
+		&dns.ClusterDNSModule{},
+		&kubernetes.StatusModule{},
+		&kubernetes.JoinNodesModule{},
+		&network.DeployNetworkPluginModule{},
+		&kubernetes.ConfigureKubernetesModule{},
+		&filesystem.ChownModule{},
+		&certs.AutoRenewCertsModule{Skip: !runtime.Cluster.Kubernetes.EnableAutoRenewCerts()},
+		&kubernetes.SaveKubeConfigModule{},
+		&plugins.DeployPluginsModule{},
+		&addons.AddonsModule{},
+		&storage.DeployLocalVolumeModule{Skip: skipLocalStorage},
+	}
+
+	p := pipeline.Pipeline{
+		Name:    "CreateKubernetesPipeline",
+		Modules: m,
+		Runtime: runtime,
+	}
+	if err := p.Start(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CreateKubernetes(args common.Argument, downloadCmd string) error {
+	args.DownloadCommand = func(path, url string) string {
+		// this is an extension point for downloading tools, for example users can set the timeout, proxy or retry under
+		// some poor network environment. Or users even can choose another cli, it might be wget.
+		// perhaps we should have a build-in download function instead of totally rely on the external one
+		return fmt.Sprintf(downloadCmd, path, url)
+	}
+
+	var loaderType string
+	if args.FilePath != "" {
+		loaderType = common.File
+	} else {
+		loaderType = common.AllInOne
+	}
+
+	runtime, err := common.NewKubeRuntime(loaderType, args)
+	if err != nil {
+		return err
+	}
+
+	switch runtime.Cluster.Kubernetes.Type {
+	case common.Kubernetes:
+		if err := NewCreateKubernetesPipeline(runtime); err != nil {
+			return err
+		}
+	default:
+		return errors.New("unsupported cluster kubernetes type")
+	}
+
+	return nil
+}

@@ -27,8 +27,9 @@ import (
 )
 
 type ArtifactImportOptions struct {
-	CommonOptions *options.CommonOptions
-	Artifact      string
+	CommonOptions   *options.CommonOptions
+	Artifact        string
+	InstallPackages bool
 }
 
 func NewArtifactImportOptions() *ArtifactImportOptions {
@@ -56,14 +57,16 @@ func NewCmdArtifactImport() *cobra.Command {
 
 func (o *ArtifactImportOptions) Run() error {
 	arg := common.Argument{
-		Debug:    o.CommonOptions.Verbose,
-		Artifact: o.Artifact,
+		Debug:           o.CommonOptions.Verbose,
+		Artifact:        o.Artifact,
+		InstallPackages: o.InstallPackages,
 	}
 	return artifact.ArtifactImport(arg)
 }
 
 func (o *ArtifactImportOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a artifact gzip")
+	cmd.Flags().BoolVarP(&o.InstallPackages, "with-packages", "", false, "install operation system packages by artifact")
 }
 
 func (o *ArtifactImportOptions) Validate(_ []string) error {

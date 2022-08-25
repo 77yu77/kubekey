@@ -14,72 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package alpha
+package phase
 
 import (
 	"fmt"
 
 	"github.com/kubesphere/kubekey/cmd/ctl/options"
 	"github.com/kubesphere/kubekey/cmd/ctl/util"
-	"github.com/kubesphere/kubekey/pkg/alpha/binary"
+	"github.com/kubesphere/kubekey/pkg/alpha/images"
 	"github.com/kubesphere/kubekey/pkg/common"
-	"github.com/kubesphere/kubekey/pkg/version/kubernetes"
 	"github.com/spf13/cobra"
 )
 
-type UpgradeBinaryOptions struct {
+type UpgradeImagesOptions struct {
 	CommonOptions  *options.CommonOptions
 	ClusterCfgFile string
 	Kubernetes     string
 	DownloadCmd    string
 }
 
-func NewUpgradeBinaryOptions() *UpgradeBinaryOptions {
-	return &UpgradeBinaryOptions{
+func NewUpgradeImagesOptions() *UpgradeImagesOptions {
+	return &UpgradeImagesOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
 }
 
-// NewCmdUpgradeBinary creates a new artifact import command
-func NewCmdUpgradeBinary() *cobra.Command {
-	o := NewUpgradeBinaryOptions()
+// NewCmdUpgrade creates a new upgrade command
+func NewCmdUpgradeImages() *cobra.Command {
+	o := NewUpgradeImagesOptions()
 	cmd := &cobra.Command{
-		Use:   "binary",
-		Short: "download the binary and synchronize kubernetes binaries",
+		Use:   "images",
+		Short: "pull the images before create your cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},
 	}
-
 	o.CommonOptions.AddCommonFlag(cmd)
 	o.AddFlags(cmd)
-	if err := completionSetting(cmd); err != nil {
+
+	if err := k8sCompletionSetting(cmd); err != nil {
 		panic(fmt.Sprintf("Got error with the completion setting"))
 	}
 	return cmd
 }
 
-func (o *UpgradeBinaryOptions) Run() error {
+func (o *UpgradeImagesOptions) Run() error {
 	arg := common.Argument{
 		FilePath:          o.ClusterCfgFile,
 		KubernetesVersion: o.Kubernetes,
 		Debug:             o.CommonOptions.Verbose,
 	}
-	return binary.UpgradeBinary(arg, o.DownloadCmd)
+	return images.UpgradeImages(arg, o.DownloadCmd)
 }
 
-func (o *UpgradeBinaryOptions) AddFlags(cmd *cobra.Command) {
+func (o *UpgradeImagesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
 	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
-
-}
-
-func completionSetting(cmd *cobra.Command) (err error) {
-	err = cmd.RegisterFlagCompletionFunc("with-kubernetes", func(cmd *cobra.Command, args []string, toComplete string) (
-		strings []string, directive cobra.ShellCompDirective) {
-		return kubernetes.SupportedK8sVersionList(), cobra.ShellCompDirectiveNoFileComp
-	})
-	return
 }

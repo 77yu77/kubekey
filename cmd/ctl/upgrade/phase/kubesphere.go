@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The KubeSphere Authors.
+Copyright 2022 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,45 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package upgrade
+package phase
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/kubesphere/kubekey/cmd/ctl/options"
-	"github.com/kubesphere/kubekey/cmd/ctl/upgrade/phase"
 	"github.com/kubesphere/kubekey/cmd/ctl/util"
+	alpha "github.com/kubesphere/kubekey/pkg/alpha/kubesphere"
 	"github.com/kubesphere/kubekey/pkg/common"
-	"github.com/kubesphere/kubekey/pkg/pipelines"
-	"github.com/kubesphere/kubekey/pkg/version/kubernetes"
 	"github.com/kubesphere/kubekey/pkg/version/kubesphere"
 	"github.com/spf13/cobra"
 )
 
-type UpgradeOptions struct {
+type UpgradeKubeSphereOptions struct {
 	CommonOptions    *options.CommonOptions
 	ClusterCfgFile   string
-	Kubernetes       string
 	EnableKubeSphere bool
 	KubeSphere       string
-	SkipPullImages   bool
 	DownloadCmd      string
-	Artifact         string
 }
 
-func NewUpgradeOptions() *UpgradeOptions {
-	return &UpgradeOptions{
+func NewUpgradeKubeSphereOptions() *UpgradeKubeSphereOptions {
+	return &UpgradeKubeSphereOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
 }
 
-// NewCmdUpgrade creates a new upgrade command
-func NewCmdUpgrade() *cobra.Command {
-	o := NewUpgradeOptions()
+// NewCmdUpgradeKubeSphere creates a new UpgradeKubeSphere command
+func NewCmdUpgradeKubeSphere() *cobra.Command {
+	o := NewUpgradeKubeSphereOptions()
 	cmd := &cobra.Command{
-		Use:   "upgrade",
-		Short: "Upgrade your cluster smoothly to a newer version with this command",
+		Use:   "kubesphere",
+		Short: "upgrade your kubesphere to a newer version with this command",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())
@@ -60,15 +55,14 @@ func NewCmdUpgrade() *cobra.Command {
 	}
 	o.CommonOptions.AddCommonFlag(cmd)
 	o.AddFlags(cmd)
-	cmd.AddCommand(phase.NewPhaseCommand())
 
-	if err := completionSetting(cmd); err != nil {
+	if err := ksCompletionSetting(cmd); err != nil {
 		panic(fmt.Sprintf("Got error with the completion setting"))
 	}
 	return cmd
 }
 
-func (o *UpgradeOptions) Complete(cmd *cobra.Command, args []string) error {
+func (o *UpgradeKubeSphereOptions) Complete(cmd *cobra.Command, args []string) error {
 	var ksVersion string
 	if o.EnableKubeSphere && len(args) > 0 {
 		ksVersion = args[0]
@@ -79,31 +73,25 @@ func (o *UpgradeOptions) Complete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (o *UpgradeOptions) Run() error {
+func (o *UpgradeKubeSphereOptions) Run() error {
 	arg := common.Argument{
-		FilePath:          o.ClusterCfgFile,
-		KubernetesVersion: o.Kubernetes,
-		KsEnable:          o.EnableKubeSphere,
-		KsVersion:         o.KubeSphere,
-		SkipPullImages:    o.SkipPullImages,
-		Debug:             o.CommonOptions.Verbose,
-		SkipConfirmCheck:  o.CommonOptions.SkipConfirmCheck,
-		Artifact:          o.Artifact,
+		FilePath:         o.ClusterCfgFile,
+		KsEnable:         o.EnableKubeSphere,
+		KsVersion:        o.KubeSphere,
+		SkipConfirmCheck: o.CommonOptions.SkipConfirmCheck,
+		Debug:            o.CommonOptions.Verbose,
 	}
-	return pipelines.UpgradeCluster(arg, o.DownloadCmd)
+	return alpha.UpgradeKubeSphere(arg, o.DownloadCmd)
 }
 
-func (o *UpgradeOptions) AddFlags(cmd *cobra.Command) {
+func (o *UpgradeKubeSphereOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
-	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
 	cmd.Flags().BoolVarP(&o.EnableKubeSphere, "with-kubesphere", "", false, fmt.Sprintf("Deploy a specific version of kubesphere (default %s)", kubesphere.Latest().Version))
-	cmd.Flags().BoolVarP(&o.SkipPullImages, "skip-pull-images", "", false, "Skip pre pull images")
 	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
-	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
 }
 
-func completionSetting(cmd *cobra.Command) (err error) {
+func ksCompletionSetting(cmd *cobra.Command) (err error) {
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) (
 		strings []string, directive cobra.ShellCompDirective) {
 		versionArray := kubesphere.VersionsStringArr()
@@ -111,9 +99,5 @@ func completionSetting(cmd *cobra.Command) (err error) {
 		return versionArray, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	err = cmd.RegisterFlagCompletionFunc("with-kubernetes", func(cmd *cobra.Command, args []string, toComplete string) (
-		strings []string, directive cobra.ShellCompDirective) {
-		return kubernetes.SupportedK8sVersionList(), cobra.ShellCompDirectiveNoFileComp
-	})
 	return
 }
