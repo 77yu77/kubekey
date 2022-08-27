@@ -1,5 +1,5 @@
 /*
- Copyright 2021 The KubeSphere Authors.
+ Copyright 2022 The KubeSphere Authors.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,27 +14,29 @@
  limitations under the License.
 */
 
-package artifact
+package kubernetes
 
 import (
-	"errors"
+	"fmt"
 
-	"github.com/kubesphere/kubekey/pkg/artifact"
-	"github.com/kubesphere/kubekey/pkg/bootstrap/os"
+	"github.com/pkg/errors"
+
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
+	"github.com/kubesphere/kubekey/pkg/kubernetes"
 )
 
-func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
-
+func NewCreateJoinNodesPipeline(runtime *common.KubeRuntime) error {
 	m := []module.Module{
-		&artifact.UnArchiveModule{},
-		&os.RepositoryModule{Skip: !runtime.Arg.InstallPackages},
+		&precheck.NodePreCheckModule{},
+		&kubernetes.StatusModule{},
+		&kubernetes.JoinNodesModule{},
 	}
 
 	p := pipeline.Pipeline{
-		Name:    "ArtifactImportPipeline",
+		Name:    "CreateJoinNodesPipeline",
 		Modules: m,
 		Runtime: runtime,
 	}
@@ -44,18 +46,29 @@ func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func ArtifactImport(args common.Argument) error {
-	var loaderType string
+func CreateJoinNodes(args common.Argument, downloadCmd string) error {
+	args.DownloadCommand = func(path, url string) string {
+		// this is an extension point for downloading tools, for example users can set the timeout, proxy or retry under
+		// some poor network environment. Or users even can choose another cli, it might be wget.
+		// perhaps we should have a build-in download function instead of totally rely on the external one
+		return fmt.Sprintf(downloadCmd, path, url)
+	}
 
-	loaderType = common.AllInOne
+	var loaderType string
+	if args.FilePath != "" {
+		loaderType = common.File
+	} else {
+		loaderType = common.AllInOne
+	}
 
 	runtime, err := common.NewKubeRuntime(loaderType, args)
 	if err != nil {
 		return err
 	}
+
 	switch runtime.Cluster.Kubernetes.Type {
 	case common.Kubernetes:
-		if err := NewArtifactImportPipeline(runtime); err != nil {
+		if err := NewCreateJoinNodesPipeline(runtime); err != nil {
 			return err
 		}
 	default:

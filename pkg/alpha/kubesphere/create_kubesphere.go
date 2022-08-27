@@ -1,5 +1,5 @@
 /*
- Copyright 2021 The KubeSphere Authors.
+ Copyright 2022 The KubeSphere Authors.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,27 +14,30 @@
  limitations under the License.
 */
 
-package artifact
+package alpha
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
-	"github.com/kubesphere/kubekey/pkg/artifact"
-	"github.com/kubesphere/kubekey/pkg/bootstrap/os"
+	"github.com/kubesphere/kubekey/pkg/alpha/confirm"
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
+	"github.com/kubesphere/kubekey/pkg/kubesphere"
 )
 
-func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
+func NewCreateKubeSpherePipeline(runtime *common.KubeRuntime) error {
 
 	m := []module.Module{
-		&artifact.UnArchiveModule{},
-		&os.RepositoryModule{Skip: !runtime.Arg.InstallPackages},
+		&precheck.NodePreCheckModule{},
+		&confirm.CreateKsConfirmModule{},
+		&kubesphere.DeployModule{Skip: !runtime.Cluster.KubeSphere.Enabled},
+		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled},
 	}
 
 	p := pipeline.Pipeline{
-		Name:    "ArtifactImportPipeline",
+		Name:    "CreateKubeSpherePipeline",
 		Modules: m,
 		Runtime: runtime,
 	}
@@ -44,18 +47,23 @@ func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func ArtifactImport(args common.Argument) error {
-	var loaderType string
+func CreateKubeSphere(args common.Argument) error {
 
-	loaderType = common.AllInOne
+	var loaderType string
+	if args.FilePath != "" {
+		loaderType = common.File
+	} else {
+		loaderType = common.AllInOne
+	}
 
 	runtime, err := common.NewKubeRuntime(loaderType, args)
 	if err != nil {
 		return err
 	}
+
 	switch runtime.Cluster.Kubernetes.Type {
 	case common.Kubernetes:
-		if err := NewArtifactImportPipeline(runtime); err != nil {
+		if err := NewCreateKubeSpherePipeline(runtime); err != nil {
 			return err
 		}
 	default:

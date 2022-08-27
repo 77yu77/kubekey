@@ -1,5 +1,5 @@
 /*
- Copyright 2021 The KubeSphere Authors.
+ Copyright 2022 The KubeSphere Authors.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,27 +14,27 @@
  limitations under the License.
 */
 
-package artifact
+package os
 
 import (
 	"errors"
 
-	"github.com/kubesphere/kubekey/pkg/artifact"
 	"github.com/kubesphere/kubekey/pkg/bootstrap/os"
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
 )
 
-func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
+func NewConfigOSPipeline(runtime *common.KubeRuntime) error {
 
 	m := []module.Module{
-		&artifact.UnArchiveModule{},
-		&os.RepositoryModule{Skip: !runtime.Arg.InstallPackages},
+		&precheck.NodePreCheckModule{},
+		&os.ConfigureOSModule{},
 	}
 
 	p := pipeline.Pipeline{
-		Name:    "ArtifactImportPipeline",
+		Name:    "ConfigOSPipeline",
 		Modules: m,
 		Runtime: runtime,
 	}
@@ -44,10 +44,14 @@ func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func ArtifactImport(args common.Argument) error {
+func ConfigOS(args common.Argument) error {
 	var loaderType string
 
-	loaderType = common.AllInOne
+	if args.FilePath != "" {
+		loaderType = common.File
+	} else {
+		loaderType = common.AllInOne
+	}
 
 	runtime, err := common.NewKubeRuntime(loaderType, args)
 	if err != nil {
@@ -55,7 +59,7 @@ func ArtifactImport(args common.Argument) error {
 	}
 	switch runtime.Cluster.Kubernetes.Type {
 	case common.Kubernetes:
-		if err := NewArtifactImportPipeline(runtime); err != nil {
+		if err := NewConfigOSPipeline(runtime); err != nil {
 			return err
 		}
 	default:

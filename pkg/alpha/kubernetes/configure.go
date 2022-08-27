@@ -14,29 +14,48 @@
  limitations under the License.
 */
 
-package nodes
+package kubernetes
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/kubesphere/kubekey/pkg/alpha/confirm"
-	"github.com/kubesphere/kubekey/pkg/alpha/precheck"
+	"github.com/pkg/errors"
+
+	"github.com/kubesphere/kubekey/pkg/addons"
+	"github.com/kubesphere/kubekey/pkg/bootstrap/precheck"
+	"github.com/kubesphere/kubekey/pkg/certs"
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
+	"github.com/kubesphere/kubekey/pkg/filesystem"
+	"github.com/kubesphere/kubekey/pkg/kubernetes"
+	"github.com/kubesphere/kubekey/pkg/plugins"
+	"github.com/kubesphere/kubekey/pkg/plugins/network"
+	"github.com/kubesphere/kubekey/pkg/plugins/storage"
 )
 
-func NewUpgradeNodesPipeline(runtime *common.KubeRuntime) error {
-
+func NewCreateConfigureKubernetesPipeline(runtime *common.KubeRuntime) error {
+	skipLocalStorage := true
+	if runtime.Arg.DeployLocalStorage != nil {
+		skipLocalStorage = !*runtime.Arg.DeployLocalStorage
+	} else if runtime.Cluster.KubeSphere.Enabled {
+		skipLocalStorage = false
+	}
 	m := []module.Module{
-		&precheck.UprgadePreCheckModule{},
-		&confirm.UpgradeK8sConfirmModule{},
-		&UpgradeNodesModule{},
+		&precheck.NodePreCheckModule{},
+		&kubernetes.StatusModule{},
+		&network.DeployNetworkPluginModule{},
+		&kubernetes.ConfigureKubernetesModule{},
+		&filesystem.ChownModule{},
+		&certs.AutoRenewCertsModule{Skip: !runtime.Cluster.Kubernetes.EnableAutoRenewCerts()},
+		&kubernetes.SaveKubeConfigModule{},
+		&plugins.DeployPluginsModule{},
+		&addons.AddonsModule{},
+		&storage.DeployLocalVolumeModule{Skip: skipLocalStorage},
 	}
 
 	p := pipeline.Pipeline{
-		Name:    "UpgradeNodesPipeline",
+		Name:    "CreateConfigureKubernetesPipeline",
 		Modules: m,
 		Runtime: runtime,
 	}
@@ -46,15 +65,15 @@ func NewUpgradeNodesPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func UpgradeNodes(args common.Argument, downloadCmd string) error {
+func CreateConfigureKubernetes(args common.Argument, downloadCmd string) error {
 	args.DownloadCommand = func(path, url string) string {
 		// this is an extension point for downloading tools, for example users can set the timeout, proxy or retry under
 		// some poor network environment. Or users even can choose another cli, it might be wget.
 		// perhaps we should have a build-in download function instead of totally rely on the external one
 		return fmt.Sprintf(downloadCmd, path, url)
 	}
-	var loaderType string
 
+	var loaderType string
 	if args.FilePath != "" {
 		loaderType = common.File
 	} else {
@@ -65,9 +84,10 @@ func UpgradeNodes(args common.Argument, downloadCmd string) error {
 	if err != nil {
 		return err
 	}
+
 	switch runtime.Cluster.Kubernetes.Type {
 	case common.Kubernetes:
-		if err := NewUpgradeNodesPipeline(runtime); err != nil {
+		if err := NewCreateConfigureKubernetesPipeline(runtime); err != nil {
 			return err
 		}
 	default:

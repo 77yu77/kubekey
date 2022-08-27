@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package alpha
+package phase
 
 import (
 	"fmt"
@@ -28,25 +28,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type UpgradeKubeSphereOptions struct {
+type CreateKubeSphereOptions struct {
 	CommonOptions    *options.CommonOptions
 	ClusterCfgFile   string
 	EnableKubeSphere bool
 	KubeSphere       string
 }
 
-func NewUpgradeKubeSphereOptions() *UpgradeKubeSphereOptions {
-	return &UpgradeKubeSphereOptions{
+func NewCreateKubeSphereOptions() *CreateKubeSphereOptions {
+	return &CreateKubeSphereOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
 }
 
-// NewCmdUpgradeKubeSphere creates a new UpgradeKubeSphere command
-func NewCmdUpgradeKubeSphere() *cobra.Command {
-	o := NewUpgradeKubeSphereOptions()
+// NewCmdCreateKubeSphere creates a new CreateKubeSphere command
+func NewCmdCreateKubeSphere() *cobra.Command {
+	o := NewCreateKubeSphereOptions()
 	cmd := &cobra.Command{
 		Use:   "kubesphere",
-		Short: "upgrade your kubesphere to a newer version with this command",
+		Short: "install the kubesphere with the input version",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())
@@ -61,7 +61,7 @@ func NewCmdUpgradeKubeSphere() *cobra.Command {
 	return cmd
 }
 
-func (o *UpgradeKubeSphereOptions) Complete(cmd *cobra.Command, args []string) error {
+func (o *CreateKubeSphereOptions) Complete(cmd *cobra.Command, args []string) error {
 	var ksVersion string
 	if o.EnableKubeSphere && len(args) > 0 {
 		ksVersion = args[0]
@@ -72,7 +72,7 @@ func (o *UpgradeKubeSphereOptions) Complete(cmd *cobra.Command, args []string) e
 	return nil
 }
 
-func (o *UpgradeKubeSphereOptions) Run() error {
+func (o *CreateKubeSphereOptions) Run() error {
 	arg := common.Argument{
 		FilePath:         o.ClusterCfgFile,
 		KsEnable:         o.EnableKubeSphere,
@@ -80,10 +80,10 @@ func (o *UpgradeKubeSphereOptions) Run() error {
 		SkipConfirmCheck: o.CommonOptions.SkipConfirmCheck,
 		Debug:            o.CommonOptions.Verbose,
 	}
-	return alpha.UpgradeKubeSphere(arg)
+	return alpha.CreateKubeSphere(arg)
 }
 
-func (o *UpgradeKubeSphereOptions) AddFlags(cmd *cobra.Command) {
+func (o *CreateKubeSphereOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().BoolVarP(&o.EnableKubeSphere, "with-kubesphere", "", false, fmt.Sprintf("Deploy a specific version of kubesphere (default %s)", kubesphere.Latest().Version))
 }
@@ -95,5 +95,6 @@ func ksCompletionSetting(cmd *cobra.Command) (err error) {
 		versionArray = append(versionArray, time.Now().Add(-time.Hour*24).Format("nightly-20060102"))
 		return versionArray, cobra.ShellCompDirectiveNoFileComp
 	}
+
 	return
 }

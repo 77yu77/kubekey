@@ -14,72 +14,83 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package alpha
+package phase
 
 import (
 	"fmt"
 
 	"github.com/kubesphere/kubekey/cmd/ctl/options"
 	"github.com/kubesphere/kubekey/cmd/ctl/util"
-	"github.com/kubesphere/kubekey/pkg/alpha/binary"
+	"github.com/kubesphere/kubekey/pkg/alpha/kubernetes"
 	"github.com/kubesphere/kubekey/pkg/common"
-	"github.com/kubesphere/kubekey/pkg/version/kubernetes"
 	"github.com/spf13/cobra"
 )
 
-type UpgradeBinaryOptions struct {
+type CreateConfigureKubernetesOptions struct {
 	CommonOptions  *options.CommonOptions
 	ClusterCfgFile string
+	Artifact       string
 	Kubernetes     string
 	DownloadCmd    string
+	LocalStorage   bool
+
+	localStorageChanged bool
 }
 
-func NewUpgradeBinaryOptions() *UpgradeBinaryOptions {
-	return &UpgradeBinaryOptions{
+func NewCreateConfigureKubernetesOptions() *CreateConfigureKubernetesOptions {
+	return &CreateConfigureKubernetesOptions{
 		CommonOptions: options.NewCommonOptions(),
 	}
 }
 
-// NewCmdUpgradeBinary creates a new artifact import command
-func NewCmdUpgradeBinary() *cobra.Command {
-	o := NewUpgradeBinaryOptions()
+func (o *CreateConfigureKubernetesOptions) Complete(cmd *cobra.Command, args []string) error {
+	if cmd.Flags().Changed("with-local-storage") {
+		o.localStorageChanged = true
+	}
+	return nil
+}
+
+// NewCmdUpgrade creates a new upgrade command
+func NewCmdCreateConfigureKubernetes() *cobra.Command {
+	o := NewCreateConfigureKubernetesOptions()
 	cmd := &cobra.Command{
-		Use:   "binary",
-		Short: "download the binary and synchronize kubernetes binaries",
+		Use:   "configure",
+		Short: "configure the k8s cluster with plugins, certs and PV",
 		Run: func(cmd *cobra.Command, args []string) {
+			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())
 		},
 	}
-
 	o.CommonOptions.AddCommonFlag(cmd)
 	o.AddFlags(cmd)
-	if err := completionSetting(cmd); err != nil {
+
+	if err := k8sCompletionSetting(cmd); err != nil {
 		panic(fmt.Sprintf("Got error with the completion setting"))
 	}
 	return cmd
 }
 
-func (o *UpgradeBinaryOptions) Run() error {
+func (o *CreateConfigureKubernetesOptions) Run() error {
 	arg := common.Argument{
 		FilePath:          o.ClusterCfgFile,
+		Artifact:          o.Artifact,
 		KubernetesVersion: o.Kubernetes,
 		Debug:             o.CommonOptions.Verbose,
+		Namespace:         o.CommonOptions.Namespace,
 	}
-	return binary.UpgradeBinary(arg, o.DownloadCmd)
+
+	if o.localStorageChanged {
+		deploy := o.LocalStorage
+		arg.DeployLocalStorage = &deploy
+	}
+
+	return kubernetes.CreateConfigureKubernetes(arg, o.DownloadCmd)
 }
 
-func (o *UpgradeBinaryOptions) AddFlags(cmd *cobra.Command) {
+func (o *CreateConfigureKubernetesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
+	cmd.Flags().BoolVarP(&o.LocalStorage, "with-local-storage", "", false, "Deploy a local PV provisioner")
 	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
-
-}
-
-func completionSetting(cmd *cobra.Command) (err error) {
-	err = cmd.RegisterFlagCompletionFunc("with-kubernetes", func(cmd *cobra.Command, args []string, toComplete string) (
-		strings []string, directive cobra.ShellCompDirective) {
-		return kubernetes.SupportedK8sVersionList(), cobra.ShellCompDirectiveNoFileComp
-	})
-	return
 }
