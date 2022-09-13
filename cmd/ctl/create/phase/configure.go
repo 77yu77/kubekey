@@ -31,7 +31,6 @@ type CreateConfigureKubernetesOptions struct {
 	ClusterCfgFile string
 	Artifact       string
 	Kubernetes     string
-	DownloadCmd    string
 	LocalStorage   bool
 
 	localStorageChanged bool
@@ -84,13 +83,11 @@ func (o *CreateConfigureKubernetesOptions) Run() error {
 		arg.DeployLocalStorage = &deploy
 	}
 
-	return kubernetes.CreateConfigureKubernetes(arg, o.DownloadCmd)
+	return kubernetes.CreateConfigureKubernetes(arg)
 }
 
 func (o *CreateConfigureKubernetesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
 	cmd.Flags().BoolVarP(&o.LocalStorage, "with-local-storage", "", false, "Deploy a local PV provisioner")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
-		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 }

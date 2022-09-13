@@ -13,12 +13,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type GetBinaryPath struct {
+type GetEtcdBinaryPath struct {
 	common.KubeAction
-	BinaryNames []string
 }
 
-func (g *GetBinaryPath) Execute(runtime connector.Runtime) error {
+func (g *GetEtcdBinaryPath) Execute(runtime connector.Runtime) error {
 	cfg := g.KubeConf.Cluster
 
 	var kubeVersion string
@@ -41,47 +40,30 @@ func (g *GetBinaryPath) Execute(runtime connector.Runtime) error {
 	}
 
 	for arch := range archMap {
-		if err := setK8sBinaryPath(g.KubeConf, runtime.GetWorkDir(), kubeVersion, arch, g.PipelineCache, g.BinaryNames); err != nil {
+		if err := setEtcdBinaryPath(g.KubeConf, runtime.GetWorkDir(), kubeVersion, arch, g.PipelineCache); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func setK8sBinaryPath(kubeConf *common.KubeConf, path, version, arch string, pipelineCache *cache.Cache, binaryNames []string) error {
-	allBinaryNames := map[string]bool{
-		"etcd":    true,
-		"kubeadm": true,
-		"kubelet": true,
-		"kubectl": true,
-		"kubecni": true,
-		"helm":    true,
-		"crictl":  true,
-	}
-
+func setEtcdBinaryPath(kubeConf *common.KubeConf, path, version, arch string, pipelineCache *cache.Cache) error {
+	binary := "etcd"
 	binariesMap := make(map[string]*files.KubeBinary)
-	for _, binary := range binaryNames {
-		if _, ok := allBinaryNames[binary]; !ok {
-			return errors.New(fmt.Sprintf("Unsupported binary name to get path: %s", binary))
-		}
-		kubeBinary := files.NewKubeBinary(binary, arch, kubekeyapiv1alpha2.DefaultEtcdVersion, path, kubeConf.Arg.DownloadCommand)
-		binariesMap[kubeBinary.ID] = kubeBinary
-
-		if !util.IsExist(kubeBinary.BaseDir) {
-			return errors.New("BaseDir of download binary is not exist")
-		}
-		if util.IsExist(kubeBinary.Path()) {
-			if err := kubeBinary.SHA256Check(); err != nil {
-				p := kubeBinary.Path()
-				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-				if err := kubeBinary.Download(); err != nil {
-					return fmt.Errorf("Failed to download %s binary: %s error: %w ", kubeBinary.ID, kubeBinary.GetCmd(), err)
-				}
+	kubeBinary := files.NewKubeBinary(binary, arch, kubekeyapiv1alpha2.DefaultEtcdVersion, path, kubeConf.Arg.DownloadCommand)
+	binariesMap[kubeBinary.ID] = kubeBinary
+	if !util.IsExist(kubeBinary.BaseDir) {
+		return errors.New("BaseDir of download binary is not exist")
+	}
+	if util.IsExist(kubeBinary.Path()) {
+		if err := kubeBinary.SHA256Check(); err != nil {
+			p := kubeBinary.Path()
+			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
+			if err := kubeBinary.Download(); err != nil {
+				return fmt.Errorf("Failed to download %s binary: %s error: %w ", kubeBinary.ID, kubeBinary.GetCmd(), err)
 			}
 		}
-
 	}
-
 	pipelineCache.Set(common.KubeBinaries+"-"+arch, binariesMap)
 	return nil
 }
