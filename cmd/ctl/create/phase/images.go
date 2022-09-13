@@ -32,7 +32,6 @@ type CreateImagesOptions struct {
 	Artifact         string
 	Kubernetes       string
 	ContainerManager string
-	DownloadCmd      string
 }
 
 func NewCreateImagesOptions() *CreateImagesOptions {
@@ -78,7 +77,7 @@ func (o *CreateImagesOptions) Run() error {
 		ContainerManager:  o.ContainerManager,
 		Debug:             o.CommonOptions.Verbose,
 	}
-	return images.CreateImages(arg, o.DownloadCmd)
+	return images.CreateImages(arg)
 }
 
 func (o *CreateImagesOptions) AddFlags(cmd *cobra.Command) {
@@ -86,6 +85,4 @@ func (o *CreateImagesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a artifact gzip")
 	cmd.Flags().StringVarP(&o.ContainerManager, "container-manager", "", "docker", "Container runtime: docker, crio, containerd and isula.")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
-		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 }

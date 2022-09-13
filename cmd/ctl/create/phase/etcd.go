@@ -27,7 +27,6 @@ import (
 type CreateEtcdOptions struct {
 	CommonOptions  *options.CommonOptions
 	ClusterCfgFile string
-	DownloadCmd    string
 }
 
 func NewCreateEtcdOptions() *CreateEtcdOptions {
@@ -57,12 +56,9 @@ func (o *CreateEtcdOptions) Run() error {
 		FilePath: o.ClusterCfgFile,
 		Debug:    o.CommonOptions.Verbose,
 	}
-	return etcd.CreateEtcd(arg, o.DownloadCmd)
+	return etcd.CreateEtcd(arg)
 }
 
 func (o *CreateEtcdOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
-		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
-
 }

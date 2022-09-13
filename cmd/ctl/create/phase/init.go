@@ -31,7 +31,6 @@ type CreateInitClusterOptions struct {
 	ClusterCfgFile string
 	Artifact       string
 	Kubernetes     string
-	DownloadCmd    string
 }
 
 func NewCreateInitClusterOptions() *CreateInitClusterOptions {
@@ -68,12 +67,10 @@ func (o *CreateInitClusterOptions) Run() error {
 		Namespace:         o.CommonOptions.Namespace,
 	}
 
-	return kubernetes.CreateInitCluster(arg, o.DownloadCmd)
+	return kubernetes.CreateInitCluster(arg)
 }
 
 func (o *CreateInitClusterOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
-		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 }

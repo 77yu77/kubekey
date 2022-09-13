@@ -18,7 +18,6 @@ package nodes
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/kubesphere/kubekey/pkg/alpha/confirm"
 	"github.com/kubesphere/kubekey/pkg/alpha/precheck"
@@ -46,13 +45,7 @@ func NewUpgradeNodesPipeline(runtime *common.KubeRuntime) error {
 	return nil
 }
 
-func UpgradeNodes(args common.Argument, downloadCmd string) error {
-	args.DownloadCommand = func(path, url string) string {
-		// this is an extension point for downloading tools, for example users can set the timeout, proxy or retry under
-		// some poor network environment. Or users even can choose another cli, it might be wget.
-		// perhaps we should have a build-in download function instead of totally rely on the external one
-		return fmt.Sprintf(downloadCmd, path, url)
-	}
+func UpgradeNodes(args common.Argument) error {
 	var loaderType string
 
 	if args.FilePath != "" {

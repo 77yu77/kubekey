@@ -30,7 +30,6 @@ type UpgradeNodesOptions struct {
 	CommonOptions  *options.CommonOptions
 	ClusterCfgFile string
 	Kubernetes     string
-	DownloadCmd    string
 }
 
 func NewUpgradeNodesOptions() *UpgradeNodesOptions {
@@ -64,12 +63,10 @@ func (o *UpgradeNodesOptions) Run() error {
 		KubernetesVersion: o.Kubernetes,
 		Debug:             o.CommonOptions.Verbose,
 	}
-	return nodes.UpgradeNodes(arg, o.DownloadCmd)
+	return nodes.UpgradeNodes(arg)
 }
 
 func (o *UpgradeNodesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
-		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 }
