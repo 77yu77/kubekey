@@ -40,7 +40,7 @@ func NewCmdConfigOS() *cobra.Command {
 	o := NewConfigOSOptions()
 	cmd := &cobra.Command{
 		Use:   "os",
-		Short: "init the os configure",
+		Short: "Init the os configure",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

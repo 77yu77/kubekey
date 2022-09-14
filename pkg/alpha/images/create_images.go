@@ -29,12 +29,11 @@ import (
 )
 
 func NewCreateImagesPipeline(runtime *common.KubeRuntime) error {
-	skipPushImages := runtime.Arg.Artifact == "" || runtime.Cluster.Registry.PrivateRegistry == ""
 	m := []module.Module{
 		&precheck.NodePreCheckModule{},
 		&kubernetes.StatusModule{},
 		&container.InstallContainerModule{},
-		&images.CopyImagesToRegistryModule{Skip: skipPushImages},
+		&images.CopyImagesToRegistryModule{},
 		&images.PullModule{},
 	}
 

@@ -46,7 +46,7 @@ func NewCmdCreateKubeSphere() *cobra.Command {
 	o := NewCreateKubeSphereOptions()
 	cmd := &cobra.Command{
 		Use:   "kubesphere",
-		Short: "install the kubesphere with the input version",
+		Short: "Install the kubesphere with the input version",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())

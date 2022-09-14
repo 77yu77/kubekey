@@ -44,7 +44,7 @@ func NewCmdCreateInitCluster() *cobra.Command {
 	o := NewCreateInitClusterOptions()
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "init the k8s cluster",
+		Short: "Init the k8s cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

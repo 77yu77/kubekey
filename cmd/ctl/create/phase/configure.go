@@ -54,7 +54,7 @@ func NewCmdCreateConfigureKubernetes() *cobra.Command {
 	o := NewCreateConfigureKubernetesOptions()
 	cmd := &cobra.Command{
 		Use:   "configure",
-		Short: "configure the k8s cluster with plugins, certs and PV",
+		Short: "Configure the k8s cluster with plugins, certs and PV",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())

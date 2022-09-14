@@ -44,7 +44,7 @@ func NewCmdCreateJoinNodes() *cobra.Command {
 	o := NewCreateJoinNodesOptions()
 	cmd := &cobra.Command{
 		Use:   "join",
-		Short: "join the control-plane nodes and worker nodes in the k8s cluster",
+		Short: "Join the control-plane nodes and worker nodes in the k8s cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

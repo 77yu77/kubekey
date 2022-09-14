@@ -43,7 +43,7 @@ func NewCmdUpgradeNodes() *cobra.Command {
 	o := NewUpgradeNodesOptions()
 	cmd := &cobra.Command{
 		Use:   "nodes",
-		Short: "upgrade cluster on master nodes and worker nodes to the version you input",
+		Short: "Upgrade cluster on master nodes and worker nodes to the version you input",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

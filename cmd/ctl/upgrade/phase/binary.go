@@ -45,7 +45,7 @@ func NewCmdUpgradeBinary() *cobra.Command {
 	o := NewUpgradeBinaryOptions()
 	cmd := &cobra.Command{
 		Use:   "binary",
-		Short: "download the binary and synchronize kubernetes binaries",
+		Short: "Download the binary and synchronize kubernetes binaries",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

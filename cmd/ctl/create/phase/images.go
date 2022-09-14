@@ -45,7 +45,7 @@ func NewCmdCreateImages() *cobra.Command {
 	o := NewCreateImagesOptions()
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "down the container and pull the images before creating your cluster",
+		Short: "Down the container and pull the images before creating your cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Validate(cmd, args))
 			util.CheckErr(o.Run())

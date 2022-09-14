@@ -43,7 +43,7 @@ func NewCmdUpgradeImages() *cobra.Command {
 	o := NewUpgradeImagesOptions()
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "pull the images before create your cluster",
+		Short: "Pull the images before create your cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

@@ -45,7 +45,7 @@ func NewCmdCreateBinary() *cobra.Command {
 	o := NewCreateBinaryOptions()
 	cmd := &cobra.Command{
 		Use:   "binary",
-		Short: "download the binaries on the local",
+		Short: "Download the binaries on the local",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

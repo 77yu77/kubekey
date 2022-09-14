@@ -40,7 +40,7 @@ func NewCmdCreateEtcd() *cobra.Command {
 	o := NewCreateEtcdOptions()
 	cmd := &cobra.Command{
 		Use:   "etcd",
-		Short: "install the etcd on the master",
+		Short: "Install the etcd on the master",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Run())
 		},

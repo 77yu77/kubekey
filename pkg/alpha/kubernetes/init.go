@@ -17,7 +17,6 @@
 package kubernetes
 
 import (
-
 	"github.com/pkg/errors"
 
 	"github.com/kubesphere/kubekey/pkg/alpha/confirm"

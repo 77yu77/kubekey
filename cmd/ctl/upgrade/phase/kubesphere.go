@@ -46,7 +46,7 @@ func NewCmdUpgradeKubeSphere() *cobra.Command {
 	o := NewUpgradeKubeSphereOptions()
 	cmd := &cobra.Command{
 		Use:   "kubesphere",
-		Short: "upgrade your kubesphere to a newer version with this command",
+		Short: "Upgrade your kubesphere to a newer version with this command",
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(o.Complete(cmd, args))
 			util.CheckErr(o.Run())
