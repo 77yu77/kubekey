@@ -30,6 +30,7 @@ func NewConfigOSPipeline(runtime *common.KubeRuntime) error {
 
 	m := []module.Module{
 		&precheck.NodePreCheckModule{},
+		&os.RepositoryModule{Skip: !runtime.Arg.InstallPackages},
 		&os.ConfigureOSModule{},
 	}
 

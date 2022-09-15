@@ -25,8 +25,9 @@ import (
 )
 
 type ConfigOSOptions struct {
-	CommonOptions  *options.CommonOptions
-	ClusterCfgFile string
+	CommonOptions   *options.CommonOptions
+	ClusterCfgFile  string
+	InstallPackages bool
 }
 
 func NewConfigOSOptions() *ConfigOSOptions {
@@ -55,10 +56,12 @@ func (o *ConfigOSOptions) Run() error {
 	arg := common.Argument{
 		FilePath: o.ClusterCfgFile,
 		Debug:    o.CommonOptions.Verbose,
+		InstallPackages: o.InstallPackages,
 	}
 	return os.ConfigOS(arg)
 }
 
 func (o *ConfigOSOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
+	cmd.Flags().BoolVarP(&o.InstallPackages, "with-packages", "", false, "install operation system packages by artifact")
 }

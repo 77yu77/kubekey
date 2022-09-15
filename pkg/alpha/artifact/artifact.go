@@ -20,7 +20,6 @@ import (
 	"errors"
 
 	"github.com/kubesphere/kubekey/pkg/artifact"
-	"github.com/kubesphere/kubekey/pkg/bootstrap/os"
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/module"
 	"github.com/kubesphere/kubekey/pkg/core/pipeline"
@@ -30,7 +29,6 @@ func NewArtifactImportPipeline(runtime *common.KubeRuntime) error {
 
 	m := []module.Module{
 		&artifact.UnArchiveModule{},
-		&os.RepositoryModule{Skip: !runtime.Arg.InstallPackages},
 	}
 
 	p := pipeline.Pipeline{
